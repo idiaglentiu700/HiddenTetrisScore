@@ -1,352 +1,293 @@
-# Encrypted Player Registry · Zama FHEVM
+# Hidden Tetris Score
 
-A minimal demo dApp that showcases how to build a privacy‑preserving player registry on top of the **Zama FHEVM**.
+Privacy-preserving Tetris leaderboard built on Zama fhEVM. Final scores are sent to the smart contract **fully encrypted**, and the leaderboard exposes only **relative tiers** (e.g. "top 10%", "top 3") — never raw scores. Players can decrypt their own exact score locally via the Zama Relayer.
 
-Each player registers with:
-
-* a **public name** stored in plaintext (for leaderboards / UX), and
-* a **fully homomorphic encrypted age** stored as an `euint8` in the smart contract.
-
-The age is never revealed on-chain in clear form. The player can decrypt their own age off‑chain using the **Relayer SDK 0.2.0** and an EIP‑712 signature.
+> **TL;DR**
+>
+> * Play Tetris off-chain.
+> * Encrypt the final score in the browser.
+> * Submit encrypted score to the HiddenTetrisScore contract.
+> * Contract computes your tier (top 3 / top 10% / participant) under FHE.
+> * Only you can decrypt your exact score using `userDecrypt`.
 
 ---
 
-## Tech stack
+## Tech Stack
 
-* **Smart contract**: Solidity `^0.8.24`
+* **Smart contract**: Solidity, Zama fhEVM FHE primitives
+* **Network**: Sepolia fhEVM
+* **Contract address**: `0xC11B92dE32C2b3D6bEc7b1ef9f96A814D3aE32Fb`
+* **Frontend**: Vanilla HTML + CSS + JS
+* **Wallet**: MetaMask / any EIP-1193 provider
+* **FHE client**: Zama Relayer SDK (`relayer-sdk-js@0.3.0-5`)
+* **Bundling**: none (single-page `index.html`)
 
-  * `@fhevm/solidity` (Zama FHE library)
-  * `SepoliaConfig` from Zama FHEVM config
-* **Frontend**: single‑page HTML app
+---
 
-  * `@zama-fhe/relayer-sdk` **0.2.0** (browser build)
-  * `ethers` **v6** (ESM, `BrowserProvider`, `Contract`)
-* **Network**: Sepolia FHEVM (testnet)
-* **Tooling**: Hardhat + hardhat‑deploy (backend), static web server (frontend)
+## Concept
 
-Frontend entry point lives at:
+Classic Tetris leaderboards leak everything: your exact score and how it compares to others. Hidden Tetris Score keeps that sensitive data under homomorphic encryption:
 
-```text
-frontend/public/index.html
+* Scores are encrypted in the browser using Zama Relayer.
+* The contract only sees ciphertexts and performs FHE operations.
+* It stores:
+
+  * your encrypted best score for a Tetris board,
+  * encrypted flags for tier membership (top 10% / top 3).
+* The UI only shows tiers on-chain.
+* Exact score is decrypted **only on the player side** with `userDecrypt`.
+
+No global "top score" ever exists in plaintext on-chain.
+
+---
+
+## Smart Contract Overview
+
+> **File:** `HiddenTetrisScore.sol` (not shown here, but ABI is embedded in the frontend)
+
+Key ideas:
+
+* **Boards**
+
+  * Each Tetris variation (e.g. difficulty / rule set) is a `boardId` (`uint256`).
+  * Owner can configure **encrypted thresholds** for each board:
+
+    * `minScoreTop10`: minimum score to be in the top-10% tier.
+    * `minScoreTop3`: minimum score to be in the top-3 tier.
+
+* **Player scores**
+
+  * Players submit their final score as an external encrypted `euint16`.
+  * Contract ingests it via FHE, compares against encrypted thresholds, and computes encrypted Boolean flags `isTop10` / `isTop3`.
+  * Only encrypted score and encrypted flags are stored.
+
+* **Decryption / privacy**
+
+  * No public decryption of scores.
+  * Players use Zama Relayer `userDecrypt` from the frontend to reveal their own score and tier locally.
+
+* **Read functions**
+
+  * `getBoardMeta(boardId)` – check if board has thresholds configured.
+  * `getBoardThresholdHandles(boardId)` – owner-only; returns handles for encrypted thresholds.
+  * `getMyScoreHandle(boardId)` – returns handle for caller’s encrypted score + `hasScore`.
+  * `getMyTierHandles(boardId)` – returns handles for caller’s score + tier flags.
+
+---
+
+## Frontend Overview
+
+> **File:** `index.html` (single-page app)
+
+The UI is intentionally simple and focused on demonstrating **encrypt → send → decrypt**:
+
+### Layout
+
+* **Header**
+
+  * App title: **Hidden Tetris Score**.
+  * Network pill: Sepolia fhEVM.
+  * Contract pill: short contract address.
+  * Wallet connect button (MetaMask): connect / disconnect.
+  * Owner badge (only when connected as contract owner).
+
+* **Play & Submit (left card)**
+
+  * **Board ID**: numeric `boardId` selector.
+  * **Final score slider**: range `0…65535`, representing final Tetris score.
+  * **Random demo score** button: uses `randomSeed()` helper.
+  * **Encrypt & send** button:
+
+    * Encrypts the `score` with `fheCore.encryptUint16`.
+    * Calls `submitEncryptedScore(boardId, encScoreHandle, proof)` on the contract.
+
+* **Your Result (right card)**
+
+  * Visual score bar (local scaling up to 10k+) showing relative magnitude.
+  * Label: encrypted best score existence / meta.
+  * Tier badges:
+
+    * Participant
+    * Top 10%
+    * Top 3
+  * **Decrypt my score** button:
+
+    * Reads handles via `getMyTierHandles(boardId)`.
+    * Calls `userDecrypt` through Relayer.
+    * Normalizes decrypted values (score, top10 flag, top3 flag) and updates UI.
+
+* **Owner Panel (bottom card)**
+
+  * Visible only for `owner()`.
+  * Fields: `boardId`, `top10Threshold`, `top3Threshold`.
+  * Button **Encrypt & set**:
+
+    * Encrypts both thresholds (uint16) via Relayer.
+    * Calls `setBoardThresholds(boardId, encTop10, encTop3, proof)`.
+
+* **Activity Console**
+
+  * Minimal log window at the bottom.
+  * Shows high-level steps: connecting wallet, encrypting, sending tx, decrypting results.
+  * Uses `safeStringify` for BigInt-safe logging.
+
+---
+
+## FHE Frontend Core (`fheCore`)
+
+The project embeds a small reusable core inside `index.html` that wraps all Zama Relayer functionality:
+
+* `configure({ contractAddress, abi })`
+* `connectWallet()` / `disconnectWallet()` / `autoConnectIfAuthorized()`
+* `getState()` – provider, signer, contract, relayer, account, owner
+* `randomSeed(modulus)` – crypto-safe pseudo-random integer for demo scores
+* `encryptUint16(value)` – homomorphically encrypt uint16 → `{ handle, proof, handles }`
+* `userDecryptHandles(handles)` – generic `userDecrypt`, returns `pick(handle) -> BigInt`
+* `isOwner()` – simple owner check based on `owner()`
+
+Helpers:
+
+* `safeStringify(obj)` – BigInt-aware JSON logging
+* `normalizeDecryptedValue(v)` – handles `boolean | bigint | number | string`
+* `buildValuePicker(out, pairs)` – maps decrypted outputs back to handles
+
+All of this is built directly on top of:
+
+```js
+import {
+  initSDK,
+  createInstance,
+  SepoliaConfig,
+  generateKeypair
+} from "https://cdn.zama.org/relayer-sdk-js/0.3.0-5/relayer-sdk-js.js";
 ```
 
----
+The Relayer instance is created with:
 
-## Main idea
+* `relayerUrl = "https://relayer.testnet.zama.org"`
+* `gatewayUrl = "https://gateway.testnet.zama.org"`
 
-The dApp demonstrates a simple pattern for Zama FHEVM:
-
-1. The user encrypts sensitive data (age) **in the browser** using the Relayer SDK.
-2. The encrypted value is sent to the smart contract as an `externalEuint8` handle + `proof`.
-3. The contract converts this into an `euint8` and stores it in state.
-4. The user can later:
-
-   * Inspect the **encrypted age handle** on-chain, and
-   * Use **userDecrypt** with an EIP‑712 signature to recover their age off‑chain.
-
-This pattern is reusable for any “profile with private fields” system.
+(With optional localhost proxy support if needed.)
 
 ---
 
-## Smart contract overview
+## Running Locally
 
-Contract name: `EncryptedPlayerRegistry`
+> The frontend is a single static file, but Relayer requires proper COOP/COEP headers and (ideally) HTTPS.
 
-Key properties:
+### 1. Clone the repo
 
-* Uses only official Zama FHE Solidity library:
-
-  * `import { FHE, euint8, externalEuint8 } from "@fhevm/solidity/lib/FHE.sol";`
-* Extends `SepoliaConfig` for the FHEVM network configuration.
-* Encrypted fields are always stored as `euint8` and **never decrypted on-chain**.
-* Access control over ciphertexts is handled via:
-
-  * `FHE.allowThis(ciphertext)`
-  * `FHE.allow(ciphertext, user)`
-  * `FHE.makePubliclyDecryptable(ciphertext)` for opt‑in public auditability.
-
-### Storage
-
-```solidity
-struct Player {
-    bool exists;   // registration flag
-    string name;   // public display name
-    euint8 age;    // encrypted age
-}
-
-mapping(address => Player) private _players;
-address public owner;
+```bash
+git clone https://github.com/<your-org-or-user>/hidden-tetris-score.git
+cd hidden-tetris-score
 ```
 
-* `name` is stored in the clear.
-* `age` is an encrypted `euint8`.
+### 2. Serve `index.html` with correct headers
 
-### Public / player functions
+Example Node/Express dev server:
 
-* `registerEncrypted(string name, externalEuint8 ageExt, bytes proof)`
+```js
+// server.js
+import express from "express";
+import path from "path";
+import { fileURLToPath } from "url";
 
-  * Encrypt age in the browser using the Relayer SDK.
-  * Call this function with the encrypted handle and proof.
-  * Contract:
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-    * calls `FHE.fromExternal(ageExt, proof)` → `euint8` ciphertext;
-    * stores it in `_players[msg.sender].age`;
-    * uses `FHE.allowThis` and `FHE.allow(ciphertext, msg.sender)`.
+const app = express();
+const PORT = process.env.PORT || 3042;
 
-* `registerPlain(string name, uint8 agePlain)`
+// Required for Relayer SDK (WASM/Workers)
+app.use((req, res, next) => {
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+  res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
+  next();
+});
 
-  * Dev/demo helper.
-  * Converts plaintext `agePlain` into ciphertext using `FHE.asEuint8` on-chain.
+app.use(express.static(__dirname));
 
-* `updateName(string newName)`
-
-  * Updates only the public `name` field.
-
-* `updateAgeEncrypted(externalEuint8 newAgeExt, bytes proof)`
-
-  * Updates only the encrypted age.
-
-* `isRegistered(address player) -> bool`
-
-  * Returns whether a player has a profile.
-
-* `getPlayer(address player) -> (bool exists, string name, bytes32 ageHandle)`
-
-  * Returns profile metadata and the encrypted age handle (`bytes32`).
-  * `ageHandle` can be fed to public decryption or user decryption off-chain.
-
-* `getMyAgeHandle() -> bytes32`
-
-  * Convenience method to fetch the `bytes32` handle for `msg.sender`’s age.
-
-* `makeMyAgePublic()`
-
-  * Calls `FHE.makePubliclyDecryptable(_players[msg.sender].age)`.
-  * Allows anyone to call `publicDecrypt` on the ciphertext.
-
-### Owner/admin functions
-
-* `owner` / `transferOwnership(address newOwner)`
-
-  * Standard ownership pattern.
-
-* `makePlayerAgePublic(address player)`
-
-  * For audits / demos, owner can force a player’s age to be publicly decryptable.
-
-* `clearPlayer(address player)`
-
-  * Logically clears a player profile.
-  * Sets `exists = false`, wipes `name`, and replaces age with `FHE.asEuint8(0)`.
-  * Avoids using `delete` on `euint8` (not supported).
-
----
-
-## Frontend overview
-
-The frontend is a single `index.html` with:
-
-* A **three‑column layout**:
-
-  * Player onboarding (name + encrypted age).
-  * “My profile” section (view profile, update name/age, decrypt age).
-  * Owner console (mark ages public / clear profiles).
-* A **dark neon UI** designed to be visually distinct from other demos.
-* Uses **Relayer SDK 0.2.0** and **ethers v6** via ESM CDNs.
-
-Key flows:
-
-### 1. Connect wallet & Relayer
-
-* Uses `BrowserProvider(window.ethereum)` from ethers v6.
-* Automatically switches to Sepolia (chain id `0xaa36a7`).
-* Initializes the Relayer with:
-
-```ts
-await initSDK();
-relayer = await createInstance({
-  ...SepoliaConfig,
-  relayerUrl: "https://relayer.testnet.zama.cloud",
-  network: window.ethereum,
-  debug: true,
+app.listen(PORT, () => {
+  console.log(`Serving on http://localhost:${PORT}`);
 });
 ```
 
-### 2. Encrypted registration
+Then run:
 
-* User enters `name` + `age`.
-* Frontend calls:
-
-```ts
-const input = relayer.createEncryptedInput(CONTRACT_ADDRESS, user);
-input.add8(age);                      // age is uint8
-const { handles, inputProof } = await input.encrypt();
-
-await contract.registerEncrypted(name, handles[0], inputProof);
+```bash
+node server.js
 ```
 
-### 3. Decrypting age (userDecrypt)
-
-* Frontend calls `getMyAgeHandle()`.
-* Generates an ephemeral keypair with `generateKeypair()`.
-* Builds EIP‑712 data via `relayer.createEIP712(...)`.
-* Uses `signer.signTypedData(...)` (EIP‑712) and then:
-
-```ts
-const pairs = [{ handle, contractAddress: CONTRACT_ADDRESS }];
-const result = await relayer.userDecrypt(
-  pairs,
-  kp.privateKey,
-  kp.publicKey,
-  sig.replace("0x", ""),
-  [CONTRACT_ADDRESS],
-  user,
-  startTs,
-  daysValid,
-);
-```
-
-* Displays the decrypted age **only in the UI**, never sending it back on-chain.
-
----
-
-## Project layout
-
-A minimal layout (simplified):
+Open in browser:
 
 ```text
-.
-├── contracts/
-│   └── EncryptedPlayerRegistry.sol
-├── frontend/
-│   └── public/
-│       └── index.html   # the SPA described above
-├── deploy/
-│   └── universal-deploy.ts
-├── hardhat.config.ts
-├── package.json
-└── README.md
+http://localhost:3042/
 ```
+
+> Make sure MetaMask is installed and points to Sepolia fhEVM.
 
 ---
 
-## Installation & setup
-
-### 1. Clone & install dependencies
-
-```bash
-git clone &lt;this-repo-url&gt;
-cd &lt;this-repo-folder&gt;
-
-# Install backend deps (Hardhat, hardhat-deploy, etc.)
-npm install
-```
-
-If the frontend uses its own `package.json` inside `frontend/`, also run:
-
-```bash
-cd frontend
-npm install
-cd ..
-```
-
-### 2. Environment variables (Hardhat)
-
-In the project root, create a `.env` file (or update an existing one):
-
-```bash
-SEPOLIA_RPC_URL=https://&lt;your-sepolia-rpc&gt;
-PRIVATE_KEY=0x&lt;your_deployer_private_key&gt;
-
-# Optional for universal-deploy
-CONTRACT_NAME=EncryptedPlayerRegistry
-CONSTRUCTOR_ARGS='[]'
-```
-
-> **Note:** never commit real private keys to Git. Use environment variables or a secure secret manager.
-
-### 3. Compile & deploy the contract
-
-```bash
-npx hardhat clean
-npx hardhat compile
-npx hardhat deploy --network sepolia
-```
-
-If you use the provided `universal-deploy.ts` script, it will pick up `CONTRACT_NAME` and `CONSTRUCTOR_ARGS` automatically.
-
-Make sure the deployed address matches the one used by the frontend (`CONTRACT_ADDRESS` constant in `index.html`).
-
----
-
-## Running the frontend
-
-Since the frontend is a static HTML SPA using WASM and `Cross-Origin-Opener-Policy`, you should serve it via a local HTTP server (not via `file://`).
-
-From the project root:
-
-```bash
-cd frontend/public
-
-# Simple option: use serve (no config needed)
-npx serve .
-
-# or, if you prefer http-server
-# npx http-server .
-```
-
-Then open the printed URL in your browser (e.g. [http://localhost:3000](http://localhost:3000) or [http://127.0.0.1:8080](http://127.0.0.1:8080)).
-
-Requirements:
-
-* Browser with EIP‑1193 wallet (MetaMask, Rabby…) connected to **Sepolia**.
-* Zama FHEVM RPC configured in your wallet / Hardhat.
-
----
-
-## How to use the dApp
+## How to Use
 
 1. **Connect wallet**
 
-   * Click **“Connect wallet”** in the header.
-   * Approve network switch to Sepolia if prompted.
+   * Click **Connect wallet**.
+   * MetaMask will switch/add Sepolia network if needed.
 
-2. **Register as a player**
+2. **Pick a board & score**
 
-   * In **“Player onboarding”** panel:
+   * Set **Board** ID (e.g. `1`).
+   * Move the **Final score** slider or press **Random demo score**.
 
-     * Enter a public display name.
-     * Enter your age (0–255).
-     * Click **“Encrypt & register”**.
-   * Wait for the transaction to confirm.
+3. **Encrypt & send score**
 
-3. **Inspect your profile**
+   * Press **Encrypt & send**.
+   * The UI will:
 
-   * In **“My profile”** panel, click **“Load my profile”**.
-   * You will see:
+     * encrypt your score via Relayer;
+     * call `submitEncryptedScore` on the contract;
+     * confirm once the transaction is mined.
 
-     * Your name, and
-     * Your encrypted age handle (`bytes32`).
+4. **Decrypt your own result**
 
-4. **Decrypt your age**
+   * Press **Decrypt my score**.
+   * The UI will:
 
-   * Click **“Private decrypt via Relayer”**.
-   * Sign the EIP‑712 message in your wallet.
-   * The decrypted age will appear as a pill in the UI, visible only in your browser.
+     * read handles via `getMyTierHandles(boardId)`;
+     * call `userDecrypt` via Relayer;
+     * update the bar, your numerical score and tier badges.
 
-5. **Owner tools (optional)**
+5. **Owner: configure thresholds**
 
-   * If connected as `owner`:
-
-     * Use **“Make age public”** for a target address to enable public decryption.
-     * Use **“Clear profile”** to logically clear a user profile.
+   * Connect as `owner()` address.
+   * Use the **Owner panel** to set `top10` and `top3` thresholds.
+   * Press **Encrypt & set**.
 
 ---
 
+## Safety & Privacy Notes
 
+* All scores and thresholds are stored **encrypted** as `euint16` under Zama fhEVM.
+* Tiers (top 10%, top 3) are computed with homomorphic comparisons (`>=`) directly on ciphertexts.
+* No public decrypt of scores is implemented.
+* Only the player can run `userDecrypt` for their own score/flags (via ACL + Relayer flows).
+
+This is a **demo / hackathon-style** project, not a production leaderboard:
+
+* No economic incentives or rewards.
+* No anti-cheat. We assume the game client is honest.
+
+---
+
+## Development Notes
+
+* Contract and frontend are intentionally minimalistic to highlight FHE operations.
+* All Relayer calls are wrapped to avoid BigInt serialization issues.
+* UI text is in English; code comments may be mixed EN/RU (builder’s preference).
 
 ---
 
 ## License
 
-MIT — feel free to fork, adapt and extend for your own Zama FHEVM demos.
+MIT – feel free to fork, modify and build your own encrypted games on top of Zama fhEVM.

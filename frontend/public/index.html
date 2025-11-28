@@ -1,343 +1,2025 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>ZAMA • FHEVM — Partner Tariff Gate</title>
+  <meta charset="UTF-8" />
+  <title>Hidden Tetris Score – Encrypted Leaderboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="color-scheme" content="dark" />
+
+  <!-- Required for Relayer SDK (WASM/Workers) -->
   <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin" />
   <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp" />
+
   <style>
-    :root{ --bg:#0b0f1a; --bg2:#090e18; --ink:#eaf1ff; --muted:#b6c4e3; --card:#0f1728; --br:#1a2540; --glow:rgba(56,189,248,.18); --accent:#2f66ff; --accent-2:#2553e6; --ok:#7ef29a; --bad:#ff8b8b; }
-    *{box-sizing:border-box} html,body{height:100%}
-    body{ margin:0; color:var(--ink);
-      background: radial-gradient(60% 40% at 50% -10%, #0f1a33 0%, transparent 70%), linear-gradient(180deg, var(--bg2) 0%, var(--bg) 100%);
-      font:15px/1.55 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial;}
-    .wrap{max-width:1180px; margin:30px auto; padding:0 18px; display:grid; gap:18px; grid-template-columns: 1.1fr .9fr}
-    .spacer{flex:1} .pill{padding:6px 10px; border:1px solid var(--br); border-radius:10px; background:linear-gradient(to bottom, rgba(255,255,255,.03), transparent 30%), linear-gradient(150deg, #182033, #060a16); color:#cfe0ff; font-weight:800; white-space:nowrap}
-    .title{font-size:22px; font-weight:900}
-    .card{border:1px solid var(--br); border-radius:16px; background:radial-gradient(circle at top center, var(--glow) 0, rgba(15,23,42,.96) 36%, #020617 70%); box-shadow:0 1px 0 rgba(15,23,42,.9), 0 28px 60px rgba(0,0,0,.8), 0 0 36px var(--glow);}    
-    .card .hd{padding:14px 16px; border-bottom:1px solid var(--br); display:flex; align-items:center; gap:10px}
-    .card .bd{padding:14px 16px;}
-    .grid{display:grid; gap:12px} .grid.cols-2{grid-template-columns:1fr 1fr}
-    label{font-size:12px; color:#9db1e8; text-transform:uppercase; letter-spacing:.06em; font-weight:800; display:block; margin-bottom:6px}
-    input{width:100%; padding:12px; border-radius:12px; border:1px solid var(--br); background:#0b1220; color:var(--ink); font-weight:800; outline:none}
-    .btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:42px; padding:10px 14px; border-radius:12px; border:1px solid rgba(31,41,55,.9); color:var(--ink); font-weight:900; cursor:pointer; background:linear-gradient(to bottom, rgba(255,255,255,.06), transparent 32%), linear-gradient(145deg, #1f2933, #020617); box-shadow:0 0 0 1px rgba(15,23,42,.9), 0 14px 30px rgba(0,0,0,.7), 0 0 26px var(--glow);}    
-    .btn:hover{transform:translateY(-1px); box-shadow:0 0 0 1px rgba(15,23,42,1), 0 18px 40px rgba(0,0,0,.85), 0 0 30px rgba(56,189,248,.35)}
-    .btn[disabled]{opacity:.55; cursor:not-allowed} .btn.primary{background:linear-gradient(180deg, var(--accent) 0%, var(--accent-2) 100%); box-shadow:0 14px 40px rgba(47,102,255,.28), inset 0 0 0 1px rgba(255,255,255,.05)}
-    .kv{display:grid; grid-template-columns:140px 1fr; gap:8px; align-items:center}
-    .mono{font-family:ui-monospace, Menlo, Consolas, 'Courier New', monospace} .muted{color:var(--muted)} .ok{color:var(--ok)} .bad{color:var(--bad)}
-    .sep{height:1px; background:var(--br); margin:8px 0} .footer{grid-column:1/-1; text-align:center; color:#9db1e8; opacity:.85; padding:8px}
-    .row-actions{display:flex; gap:10px; flex-wrap:wrap}
-    .result-box{padding:10px 12px; border:1px solid var(--br); border-radius:12px; background:linear-gradient(to bottom, rgba(255,255,255,.03), transparent 32%), linear-gradient(145deg, #132035, #020617);}    
-    .tag{display:inline-block; padding:2px 8px; border-radius:10px; border:1px solid var(--br); background:#0b1424; color:#cfe0ff; font-size:12px; font-weight:800}
-    .row-split{display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center} .small{font-size:12px}
+    :root {
+      --bg: #f3f4f6;
+      --bg-soft: #ffffff;
+      --bg-softer: #f9fafb;
+      --accent-1: #2563eb;
+      --accent-2: #7c3aed;
+      --accent-3: #16a34a;
+      --accent-4: #f97316;
+      --danger: #dc2626;
+      --success: #16a34a;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+      --border-soft: rgba(148, 163, 184, 0.8);
+      --card-radius: 24px;
+      --pill-radius: 999px;
+      --shadow-soft: 0 20px 40px rgba(15, 23, 42, 0.08);
+      --transition-fast: 150ms ease-out;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      color: var(--text-main);
+      background:
+        radial-gradient(circle at 0 0, #dbeafe 0, transparent 45%),
+        radial-gradient(circle at 100% 0, #f5d0fe 0, transparent 45%),
+        radial-gradient(circle at 50% 110%, #bbf7d0 0, #e5e7eb 55%);
+    }
+
+    body {
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .page-shell {
+      width: 100%;
+      max-width: 1280px;
+      position: relative;
+      min-height: calc(100vh - 32px);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .page-shell::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 32px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      pointer-events: none;
+    }
+
+    .tetris-grid-bg {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(209, 213, 219, 0.6) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(209, 213, 219, 0.6) 1px, transparent 1px);
+      background-size: 26px 26px;
+      opacity: 0.4;
+      border-radius: 32px;
+      pointer-events: none;
+      mask-image: radial-gradient(circle at 50% 50%, black 0, transparent 70%);
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      padding: 20px 22px 16px;
+      border-radius: 28px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(249, 250, 251, 0.98));
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      height: 100%;
+    }
+
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 4px;
+    }
+
+    .app-title-block {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .app-title-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .app-orb {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background:
+        linear-gradient(135deg, #22c55e, #22c55e),
+        conic-gradient(
+          from 220deg,
+          #22c55e,
+          #38bdf8,
+          #a855f7,
+          #f97316,
+          #22c55e
+        );
+      box-shadow:
+        0 10px 20px rgba(37, 99, 235, 0.25),
+        0 0 0 4px rgba(191, 219, 254, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 20px;
+    }
+
+    .app-title {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .app-title-main {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .app-title-sub {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--text-muted);
+    }
+
+    .app-subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .pill {
+      border-radius: var(--pill-radius);
+      padding: 6px 12px;
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid rgba(148, 163, 184, 0.8);
+      background: #ffffff;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .pill-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: rgba(148,163,184,0.9);
+    }
+
+    .pill-dot.live {
+      background: var(--accent-3);
+      box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.35);
+    }
+
+    .pill-network {
+      border-color: rgba(37, 99, 235, 0.8);
+      color: #1d4ed8;
+    }
+
+    .pill-contract {
+      border-color: rgba(124, 58, 237, 0.8);
+      color: #6d28d9;
+    }
+
+    .pill-owner {
+      border-color: rgba(250, 204, 21, 0.9);
+      color: #92400e;
+      background: #fef3c7;
+    }
+
+    .btn {
+      border-radius: 999px;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      border: 1px solid rgba(148, 163, 184, 0.9);
+      background: #ffffff;
+      color: var(--text-main);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition:
+        transform var(--transition-fast),
+        box-shadow var(--transition-fast),
+        border-color var(--transition-fast),
+        background var(--transition-fast),
+        opacity 120ms ease-out;
+    }
+
+    .btn span.icon {
+      font-size: 18px;
+    }
+
+    .btn-primary {
+      background-image: linear-gradient(135deg, #22c55e, #10b981, #3b82f6);
+      border-color: transparent;
+      color: #ffffff;
+      box-shadow:
+        0 10px 25px rgba(37, 99, 235, 0.25),
+        0 0 0 3px rgba(191, 219, 254, 0.8);
+    }
+
+    .btn-ghost {
+      background: #eef2ff;
+      border-color: rgba(129, 140, 248, 0.7);
+      color: #3730a3;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      box-shadow:
+        0 16px 28px rgba(37, 99, 235, 0.32),
+        0 0 0 3px rgba(191, 219, 254, 1);
+    }
+
+    .btn:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.16);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: default;
+      box-shadow: none;
+    }
+
+    .layout-main {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.1fr);
+      gap: 18px;
+      margin-top: 4px;
+      flex: 1;
+      align-items: stretch;
+    }
+
+    @media (max-width: 900px) {
+      .layout-main {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .card {
+      border-radius: var(--card-radius);
+      background: var(--bg-soft);
+      border: 1px solid var(--border-soft);
+      padding: 16px 16px 14px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background:
+        radial-gradient(circle at 0 0, rgba(59, 130, 246, 0.16), transparent 55%),
+        radial-gradient(circle at 100% 100%, rgba(168, 85, 247, 0.16), transparent 55%);
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .card-header {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .card-title span.icon {
+      font-size: 18px;
+    }
+
+    .card-tag {
+      font-size: 11px;
+      color: var(--text-muted);
+      border-radius: var(--pill-radius);
+      border: 1px solid rgba(148, 163, 184, 0.8);
+      padding: 3px 9px;
+      background: #f9fafb;
+    }
+
+    .card-body {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 13px;
+      flex: 1;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 13px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .field-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .field-label span.right {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .field-number,
+    .field-select {
+      border-radius: var(--pill-radius);
+      border: 1px solid rgba(156, 163, 175, 0.9);
+      background: #ffffff;
+      color: var(--text-main);
+      font-size: 14px;
+      padding: 8px 14px;
+      outline: none;
+      width: 100%;
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+    }
+
+    .field-number::-webkit-outer-spin-button,
+    .field-number::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .field-number:focus,
+    .field-select:focus {
+      border-color: rgba(59, 130, 246, 0.9);
+      box-shadow: 0 0 0 3px rgba(191, 219, 254, 0.9);
+    }
+
+    .field-slider {
+      width: 100%;
+    }
+
+    input[type="range"].field-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      border-radius: 999px;
+      background: linear-gradient(to right, #bfdbfe, #a5b4fc);
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"].field-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 999px;
+      background: #ffffff;
+      border: 2px solid #3b82f6;
+      box-shadow:
+        0 4px 10px rgba(37, 99, 235, 0.4),
+        0 0 0 3px rgba(191, 219, 254, 1);
+      margin-top: -7px;
+    }
+
+    .tiny {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .score-bar-shell {
+      position: relative;
+      height: 18px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #e5e7eb;
+      border: 1px solid rgba(148, 163, 184, 0.9);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+    }
+
+    .score-bar-fill {
+      position: absolute;
+      inset: 0;
+      transform-origin: left center;
+      transform: scaleX(0);
+      background-image: linear-gradient(90deg, #22c55e, #84cc16, #facc15, #f97316, #ef4444);
+      box-shadow: 0 4px 14px rgba(234, 179, 8, 0.7);
+      transition: transform 260ms ease-out, box-shadow 260ms ease-out;
+    }
+
+    .score-bar-shell[data-low="1"] .score-bar-fill {
+      box-shadow: 0 4px 14px rgba(248, 113, 22, 0.9);
+    }
+
+    .score-value {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 3px;
+      font-weight: 500;
+    }
+
+    .badge-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      border-radius: var(--pill-radius);
+      padding: 4px 10px;
+      font-size: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.8);
+      background: #f9fafb;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .badge-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.9);
+    }
+
+    .badge[data-tier="top3"] {
+      border-color: rgba(249, 115, 22, 0.95);
+      color: #ea580c;
+      background: #fffbeb;
+    }
+    .badge[data-tier="top3"] .badge-dot {
+      background: #f97316;
+      box-shadow: 0 0 0 3px rgba(254, 215, 170, 0.9);
+    }
+
+    .badge[data-tier="top10"] {
+      border-color: rgba(37, 99, 235, 0.95);
+      color: #1d4ed8;
+      background: #eff6ff;
+    }
+    .badge[data-tier="top10"] .badge-dot {
+      background: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(191, 219, 254, 0.9);
+    }
+
+    .badge[data-tier="participant"] {
+      border-color: rgba(148, 163, 184, 0.75);
+      color: var(--text-muted);
+      background: #f9fafb;
+    }
+
+    .card-footer {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .status-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.9);
+    }
+
+    .status-dot.live {
+      background: var(--accent-3);
+      box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.5);
+    }
+
+    .owner-card {
+      margin-top: 4px;
+    }
+
+    .owner-chip {
+      border-radius: var(--pill-radius);
+      padding: 4px 10px;
+      font-size: 11px;
+      border: 1px dashed rgba(234, 179, 8, 0.9);
+      color: #92400e;
+      background: #fffbeb;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+    }
+
+    .owner-chip span.icon {
+      font-size: 14px;
+    }
+
+    .console {
+      margin-top: 8px;
+      padding: 9px 12px;
+      border-radius: 16px;
+      background: #f9fafb;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      font-size: 11px;
+      color: var(--text-muted);
+      max-height: 120px;
+      overflow-y: auto;
+      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
+    }
+
+    .console-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .console-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: #6b7280;
+    }
+
+    .console-line {
+      line-height: 1.4;
+      opacity: 0.95;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .console-line span.prefix {
+      color: #3b82f6;
+      font-weight: 600;
+    }
+
+    .console-line span.error {
+      color: var(--danger);
+      font-weight: 500;
+    }
+
+    .console-line span.ok {
+      color: var(--success);
+      font-weight: 500;
+    }
+
+    .console-badge {
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      padding: 1px 6px;
+      font-size: 10px;
+      color: rgba(107, 114, 128, 0.9);
+      background: #ffffff;
+    }
+
+    ul.mini-list {
+      margin: 4px 0 0 18px;
+      padding: 0;
+    }
+
+    ul.mini-list li {
+      margin-bottom: 2px;
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <section class="card">
-      <div class="hd">
-        <div class="title">Partner Tariff Gate</div>
-        <span class="pill">ZAMA · FHEVM</span>
-        <span class="spacer"></span>
-        <span class="pill" id="net-pill">Network: —</span>
-        <button class="btn" id="btn-connect">Connect</button>
-      </div>
-      <div class="bd grid">
-        <div class="card">
-          <div class="hd"><b>Eligibility · Encrypted user input</b></div>
-          <div class="bd grid">
-            <div class="result-box" id="decisionBox">Decision: <span class="tag">n/a</span></div>
-
-            <div class="grid cols-2">
-              <div><label>Plan ID</label><input id="planId" type="number" min="1" value="1" /></div>
-              <div></div>
-              <div><label>KYC level (u8)</label><input id="kyc" type="number" min="0" max="255" value="3" /></div>
-              <div><label>Tenure days (u16)</label><input id="tenure" type="number" min="0" max="65535" value="45" /></div>
-              <div><label>Trade volume (u32)</label><input id="volume" type="number" min="0" max="4294967295" value="1500" /></div>
-              <div style="display:flex;align-items:flex-end;justify-content:flex-end">
-                <button class="btn primary" id="btn-eval">Encrypt &amp; Evaluate</button>
-              </div>
+  <div class="page-shell">
+    <div class="tetris-grid-bg"></div>
+    <div class="app">
+      <header class="app-header">
+        <div class="app-title-block">
+          <div class="app-title-row">
+            <div class="app-orb">T</div>
+            <div class="app-title">
+              <div class="app-title-main">Hidden Tetris Score</div>
+              <div class="app-title-sub">Encrypted leaderboard</div>
             </div>
-
-            <div>
-              <label>Handle</label>
-              <div class="row-split">
-                <input id="handleOut" class="mono small" readonly placeholder="—" />
-                <button class="btn" id="btn-copy">Copy</button>
-              </div>
-            </div>
-
-            <div class="row-actions">
-              <button class="btn" id="btn-make-public">Make my decision public</button>
-              <button class="btn" id="btn-public-decrypt">Decrypt (public)</button>
-              <button class="btn" id="btn-user-decrypt">Decrypt (signed)</button>
-            </div>
+          </div>
+          <div class="app-subtitle">
+            Play Tetris. Send scores encrypted. Decrypt only on your device.
           </div>
         </div>
 
-        <div class="card">
-          <div class="hd"><b>Admin · Set encrypted policy</b> <span class="pill" id="isOwnerPill" style="margin-left:8px">owner: —</span></div>
-          <div class="bd grid cols-2">
-            <div><label>Plan ID</label><input id="p-plan" type="number" min="1" value="1" /></div>
-            <div><label>minKycLevel (u8)</label><input id="p-kyc" type="number" min="0" max="255" value="2" /></div>
-            <div><label>minTenureDays (u16)</label><input id="p-tenure" type="number" min="0" max="65535" value="30" /></div>
-            <div><label>minTradeVolumeUsd (u32)</label><input id="p-volume" type="number" min="0" max="4294967295" value="1000" /></div>
-            <div><label>minPassRules (u8)</label><input id="p-pass" type="number" min="1" max="3" value="2" /></div>
-            <div style="display:flex;align-items:flex-end"><button class="btn" id="btn-set-policy">Set encrypted policy</button></div>
+        <div class="header-right">
+          <div class="pill pill-network">
+            <span class="pill-dot live"></span>
+            <span>Sepolia fhEVM</span>
+          </div>
+
+          <div class="pill pill-contract">
+            <span>Contract</span>
+            <span id="contract-label">—</span>
+          </div>
+
+          <div id="owner-pill" class="pill pill-owner" style="display:none;">
+            <span class="pill-dot live"></span>
+            <span>Owner</span>
+          </div>
+
+          <div id="account-pill" class="pill" style="display:none;">
+            <span class="pill-dot live"></span>
+            <span id="account-label">—</span>
+          </div>
+
+          <button id="connect-btn" class="btn btn-primary">
+            <span class="icon">🦊</span>
+            <span id="connect-label">Connect wallet</span>
+          </button>
+        </div>
+      </header>
+
+      <main class="layout-main">
+        <!-- LEFT: simulate score + submit -->
+        <section class="card" id="submit-card">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="icon">🎮</span>
+              <span>Play & submit</span>
+            </div>
+            <div class="card-tag">Encrypted write</div>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="field-group" style="max-width: 210px;">
+                <label class="field-label" for="board-id-input">
+                  <span>Board</span>
+                  <span class="right">ID</span>
+                </label>
+                <input
+                  id="board-id-input"
+                  type="number"
+                  class="field-number"
+                  min="1"
+                  step="1"
+                  value="1"
+                />
+              </div>
+
+              <div class="field-group">
+                <label class="field-label" for="score-input">
+                  <span>Final score</span>
+                  <span class="right"><span id="score-label">1200</span> pts</span>
+                </label>
+                <input
+                  id="score-input"
+                  type="range"
+                  min="0"
+                  max="65535"
+                  value="1200"
+                  class="field-slider"
+                />
+                <div class="row" style="margin-top: 4px;">
+                  <button id="random-score-btn" class="btn btn-ghost" style="padding-inline: 14px;">
+                    <span class="icon">🎲</span>
+                    <span>Random demo score</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <div class="field-label">
+                <span>Send to contract</span>
+                <span class="right">encrypted</span>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div class="status-label">
+              <span id="submit-status-dot" class="status-dot"></span>
+              <span id="submit-status-text">Wallet not connected</span>
+            </div>
+            <button id="submit-score-btn" class="btn btn-primary" disabled>
+              <span class="icon">📡</span>
+              <span>Encrypt & send</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- RIGHT: decrypt own score & rank -->
+        <section class="card" id="result-card">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="icon">🏆</span>
+              <span>Your result</span>
+            </div>
+            <div class="card-tag">Private decrypt</div>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="field-group">
+                <div class="field-label">
+                  <span>Best score</span>
+                  <span class="right" id="score-meta-label">no submission yet</span>
+                </div>
+                <div class="score-bar-shell" id="score-bar-shell" data-low="0">
+                  <div class="score-bar-fill" id="score-bar-fill"></div>
+                </div>
+                <div class="score-value" id="score-value-text">
+                  Score: —
+                </div>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <div class="field-label">
+                <span>Rank tier</span>
+                <span class="right">relative only</span>
+              </div>
+              <div class="badge-row" id="tier-badges">
+                <div class="badge" data-tier="participant">
+                  <div class="badge-dot"></div>
+                  <span id="tier-text-main">No score yet</span>
+                </div>
+              </div>
+              <div class="tiny" id="tier-text-extra">
+                —
+              </div>
+            </div>
+
+            <div class="field-group">
+              <div class="field-label">
+                <span>Decrypt</span>
+                <span class="right">Relayer userDecrypt</span>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div class="status-label">
+              <span id="result-status-dot" class="status-dot"></span>
+              <span id="result-status-text">Nothing decrypted yet</span>
+            </div>
+            <button id="decrypt-btn" class="btn btn-ghost" disabled>
+              <span class="icon">🔐</span>
+              <span>Decrypt my score</span>
+            </button>
+          </div>
+        </section>
+      </main>
+
+      <!-- OWNER: configure thresholds -->
+      <section class="card owner-card" id="owner-card" style="display:none;">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="icon">🛠️</span>
+            <span>Owner panel</span>
+          </div>
+          <div class="owner-chip">
+            <span class="icon">⚙️</span>
+            <span>Board thresholds</span>
           </div>
         </div>
-      </div>
-    </section>
+        <div class="card-body">
+          <div class="row">
+            <div class="field-group" style="max-width: 210px;">
+              <label class="field-label" for="owner-board-id-input">
+                <span>Board</span>
+                <span class="right">ID</span>
+              </label>
+              <input
+                id="owner-board-id-input"
+                type="number"
+                class="field-number"
+                min="1"
+                step="1"
+                value="1"
+              />
+            </div>
 
-    <aside class="card">
-      <div class="hd"><b>Contract</b></div>
-      <div class="bd grid">
-        <div class="kv"><div class="muted">Address:</div><div class="mono" id="caddr">—</div></div>
-        <div class="kv"><div class="muted">Owner:</div><div class="mono" id="cowner">—</div></div>
-        <div class="kv"><div class="muted">Relayer:</div><div id="relayerState">not ready</div></div>
-        <div class="sep"></div>
-        <div class="kv"><div class="muted">Your account:</div><div class="mono" id="acc">—</div></div>
-        <div class="kv"><div class="muted">Eligibility handle:</div><div class="mono" id="lastHandle">—</div></div>
-      </div>
-    </aside>
+            <div class="field-group">
+              <label class="field-label" for="top10-input">
+                <span>Top 10% score</span>
+                <span class="right">≥ value</span>
+              </label>
+              <input
+                id="top10-input"
+                type="number"
+                min="0"
+                max="65535"
+                class="field-number"
+                value="3000"
+              />
+            </div>
 
-    <div class="footer">ZAMA FHEVM · Partner Tariff Gate — Single-file demo (Sepolia)</div>
+            <div class="field-group">
+              <label class="field-label" for="top3-input">
+                <span>Top 3 score</span>
+                <span class="right">≥ value</span>
+              </label>
+              <input
+                id="top3-input"
+                type="number"
+                min="0"
+                max="65535"
+                class="field-number"
+                value="8000"
+              />
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <div class="status-label">
+            <span id="board-status-dot" class="status-dot"></span>
+            <span id="board-status-text">Board not checked</span>
+          </div>
+          <button id="set-thresholds-btn" class="btn btn-ghost">
+            <span class="icon">🧪</span>
+            <span>Encrypt & set</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Console -->
+      <section class="console">
+        <div class="console-header">
+          <div class="console-title">Activity</div>
+          <div class="console-badge">Relayer &amp; fhEVM</div>
+        </div>
+        <div id="console-body">
+          <div class="console-line">
+            <span class="prefix">[init]</span>
+            <span> UI loaded. Connect wallet to start.</span>
+          </div>
+        </div>
+      </section>
+    </div>
   </div>
 
   <script type="module">
-    // ===== Net & endpoints =====
-    const CONTRACT_ADDRESS = '0x7F658EDaddFC0dfb8a68021dD8855d1B34a36CC3';
-    const CHAIN_ID_HEX = '0xaa36a7';
+    import { BrowserProvider, Contract } from "https://cdn.jsdelivr.net/npm/ethers@6.15.0/+esm";
+    import {
+      initSDK,
+      createInstance,
+      SepoliaConfig,
+      generateKeypair
+    } from "https://cdn.zama.org/relayer-sdk-js/0.3.0-5/relayer-sdk-js.js";
 
-    // Try to use local reverse-proxy if available, else direct Zama endpoints
-    const ORIGIN = window.location.origin;
-    const HAS_LOCAL_PROXY = ORIGIN.includes('localhost:3443') || ORIGIN.includes('127.0.0.1:3443');
-    const RELAYER_URL = HAS_LOCAL_PROXY ? `${ORIGIN}/relayer` : 'https://relayer.testnet.zama.org';
-    const GATEWAY_URL = HAS_LOCAL_PROXY ? `${ORIGIN}/gateway` : 'https://gateway.testnet.zama.org';
-
-    const $ = (q)=>document.querySelector(q);
-    const btnConnect=$('#btn-connect'), netPill=$('#net-pill'), isOwnerPill=$('#isOwnerPill');
-    const caddrEl=$('#caddr'), cownerEl=$('#cowner'), accEl=$('#acc'), relayerStateEl=$('#relayerState');
-    const planIdEl=$('#planId'), kycEl=$('#kyc'), tenureEl=$('#tenure'), volumeEl=$('#volume'), btnEval=$('#btn-eval');
-    const decisionBox=$('#decisionBox'), handleOut=$('#handleOut'), btnCopy=$('#btn-copy');
-    const btnMakePublic=$('#btn-make-public'), btnPublicDecrypt=$('#btn-public-decrypt'), btnUserDecrypt=$('#btn-user-decrypt');
-    const pPlanEl=$('#p-plan'), pKycEl=$('#p-kyc'), pTenureEl=$('#p-tenure'), pVolEl=$('#p-volume'), pPassEl=$('#p-pass'), btnSetPolicy=$('#btn-set-policy');
-    const lastHandleEl=$('#lastHandle');
-
-    const [{ BrowserProvider, Contract }, relayerSdk] = await Promise.all([
-      import('https://cdn.jsdelivr.net/npm/ethers@6.15.0/+esm'),
-      import('https://cdn.zama.org/relayer-sdk-js/0.3.0-5/relayer-sdk-js.js')
-    ]);
-    const { initSDK, createInstance, SepoliaConfig, generateKeypair } = relayerSdk;
+    // Ensure WASM/Workers ready
     await initSDK();
 
-    const IS_HTTPS = location.protocol === 'https:';
-    if(!IS_HTTPS){ relayerStateEl.innerHTML = '<span class="bad">not https (signed decrypt disabled)</span>'; btnUserDecrypt.disabled = true; }
+    // ------------------------------------------------------------------
+    // Safe logging helpers (BigInt-safe stringify)
+    // ------------------------------------------------------------------
+    const consoleBody = document.getElementById("console-body");
 
-    const ABI = [
-      { inputs:[], stateMutability:'view', type:'function', name:'owner', outputs:[{type:'address'}] },
-      { inputs:[{name:'planId',type:'uint256'}], stateMutability:'view', type:'function', name:'hasPolicy', outputs:[{type:'bool'}] },
-      { inputs:[{name:'planId',type:'uint256'},{name:'kycLevelExt',type:'bytes32'},{name:'tenureDaysExt',type:'bytes32'},{name:'volumeUsdExt',type:'bytes32'},{name:'proof',type:'bytes'}], name:'evaluateEligibilityEncrypted', outputs:[{type:'bytes32'}], stateMutability:'nonpayable', type:'function' },
-      { inputs:[{name:'planId',type:'uint256'},{name:'minKycLevelExt',type:'bytes32'},{name:'minTenureDaysExt',type:'bytes32'},{name:'minTradeVolumeUsdExt',type:'bytes32'},{name:'minPassRulesExt',type:'bytes32'},{name:'proof',type:'bytes'}], name:'setPolicyEncrypted', outputs:[], stateMutability:'nonpayable', type:'function' },
-      { inputs:[{name:'planId',type:'uint256'}], name:'getMyEligibilityHandle', outputs:[{type:'bytes32'}], stateMutability:'view', type:'function' },
-      { inputs:[{name:'planId',type:'uint256'}], name:'makeMyEligibilityPublic', outputs:[], stateMutability:'nonpayable', type:'function' }
+    const safeStringify = (obj) =>
+      JSON.stringify(
+        obj,
+        (k, v) => (typeof v === "bigint" ? v.toString() + "n" : v),
+        2
+      );
+
+    function appendUiLog(message, { kind = "info" } = {}) {
+      const line = document.createElement("div");
+      line.className = "console-line";
+
+      const p = document.createElement("span");
+      p.className = "prefix";
+      p.textContent = kind === "error" ? "[error]" : kind === "ok" ? "[ok]" : "[log]";
+
+      const t = document.createElement("span");
+      if (kind === "error") t.className = "error";
+      if (kind === "ok") t.className = "ok";
+      t.textContent = " " + message;
+
+      line.appendChild(p);
+      line.appendChild(t);
+      consoleBody.appendChild(line);
+      consoleBody.scrollTop = consoleBody.scrollHeight;
+
+      // Also log to dev console with safe stringify
+      try {
+        console.log("[ui]", message);
+      } catch {}
+    }
+
+    function coreLog(...parts) {
+      const msg = parts
+        .map((x) =>
+          typeof x === "string"
+            ? x
+            : (() => {
+                try { return safeStringify(x); } catch { return String(x); }
+              })()
+        )
+        .join(" ");
+      console.log("[ZamaFheCore]", msg);
+    }
+
+    function normalizeDecryptedValue(v) {
+      if (v == null) return null;
+      if (typeof v === "boolean") return v ? 1n : 0n;
+      if (typeof v === "bigint" || typeof v === "number") return BigInt(v);
+      if (typeof v === "string") return BigInt(v);
+      return BigInt(v.toString());
+    }
+
+    function shortAddress(addr) {
+      if (!addr) return "—";
+      return addr.slice(0, 6) + "…" + addr.slice(-4);
+    }
+
+    function normalizeChainId(id) {
+      if (!id) return "";
+      const s = String(id);
+      if (/^\d+$/.test(s)) return "0x" + BigInt(s).toString(16);
+      return s.toLowerCase();
+    }
+
+    // ------------------------------------------------------------------
+    // Basic network helpers (Sepolia)
+    // ------------------------------------------------------------------
+    const DEFAULT_CHAIN_ID_HEX = "0xaa36a7"; // Sepolia
+
+    async function ensureNetwork(chainIdHex) {
+      if (!window.ethereum?.request) return false;
+
+      let current = normalizeChainId(
+        await window.ethereum.request({ method: "eth_chainId" }).catch(() => null)
+      );
+      if (current === chainIdHex) return true;
+
+      try {
+        await window.ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: chainIdHex }]
+        });
+      } catch (e) {
+        if (e && e.code === 4902) {
+          await window.ethereum.request({
+            method: "wallet_addEthereumChain",
+            params: [
+              {
+                chainId: chainIdHex,
+                chainName: "Sepolia",
+                nativeCurrency: { name: "Sepolia ETH", symbol: "SEP", decimals: 18 },
+                rpcUrls: ["https://rpc.sepolia.org"],
+                blockExplorerUrls: ["https://sepolia.etherscan.io"]
+              }
+            ]
+          });
+          await window.ethereum.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: chainIdHex }]
+          });
+        } else {
+          throw e;
+        }
+      }
+
+      const after = normalizeChainId(
+        await window.ethereum.request({ method: "eth_chainId" }).catch(() => null)
+      );
+      return after === chainIdHex;
+    }
+
+    // ------------------------------------------------------------------
+    // Relayer URL detection – we use public testnet endpoints
+    // ------------------------------------------------------------------
+    function detectRelayerUrls() {
+      const origin = window.location.origin;
+      const hasLocalProxy =
+        origin.includes("localhost:3443") || origin.includes("127.0.0.1:3443");
+
+      if (hasLocalProxy) {
+        return {
+          relayerUrl: `${origin}/relayer`,
+          gatewayUrl: `${origin}/gateway`
+        };
+      }
+
+      return {
+        relayerUrl: "https://relayer.testnet.zama.org",
+        gatewayUrl: "https://gateway.testnet.zama.org"
+      };
+    }
+
+    // ------------------------------------------------------------------
+    // fheCore: shared logic for Relayer + encryption + userDecrypt
+    // ------------------------------------------------------------------
+    const fheConfig = {
+      contractAddress: null,
+      abi: null,
+      chainIdHex: DEFAULT_CHAIN_ID_HEX,
+      relayerUrl: null,
+      gatewayUrl: null,
+      relayerNetworkConfig: SepoliaConfig
+    };
+
+    const fheState = {
+      provider: null,
+      signer: null,
+      contract: null,
+      relayer: null,
+      account: null,
+      owner: null
+    };
+
+    function buildValuePicker(out, pairs) {
+      let map = {};
+      if (out && typeof out === "object") {
+        if (Array.isArray(out.clearValues) && pairs && pairs.length) {
+          pairs.forEach((p, i) => {
+            const h = String(p.handle || p).toLowerCase();
+            map[h] = out.clearValues[i];
+          });
+        }
+
+        if (
+          !Object.keys(map).length &&
+          typeof out.abiEncodedClearValues === "string" &&
+          pairs &&
+          pairs.length
+        ) {
+          const raw = out.abiEncodedClearValues.startsWith("0x")
+            ? out.abiEncodedClearValues.slice(2)
+            : out.abiEncodedClearValues;
+          const values = [];
+          for (let i = 0; i + 64 <= raw.length; i += 64) {
+            const chunk = "0x" + raw.slice(i, i + 64);
+            try { values.push(BigInt(chunk)); } catch { values.push(0n); }
+          }
+          pairs.forEach((p, i) => {
+            const h = String(p.handle || p).toLowerCase();
+            if (values[i] !== undefined) map[h] = values[i];
+          });
+        }
+
+        if (!Object.keys(map).length) {
+          for (const [k, v] of Object.entries(out)) {
+            map[k.toLowerCase()] = v;
+          }
+        }
+      }
+
+      return (handle) => {
+        if (!handle) return null;
+        const k = String(handle).toLowerCase();
+        const v = map[k];
+        if (v === undefined) return null;
+        return normalizeDecryptedValue(v);
+      };
+    }
+
+    async function userDecryptMany(pairs) {
+      if (!fheState.relayer || !fheState.signer || !fheConfig.contractAddress) {
+        throw new Error("Relayer, signer or contract address not ready");
+      }
+
+      const kp = await generateKeypair();
+      const startTs = Math.floor(Date.now() / 1000).toString();
+      const daysValid = "7";
+
+      const eip = fheState.relayer.createEIP712(
+        kp.publicKey,
+        [fheConfig.contractAddress],
+        startTs,
+        daysValid
+      );
+
+      const sig = await fheState.signer.signTypedData(
+        eip.domain,
+        { UserDecryptRequestVerification: eip.types.UserDecryptRequestVerification },
+        eip.message
+      );
+
+      const userAddr = await fheState.signer.getAddress();
+
+      const out = await fheState.relayer.userDecrypt(
+        pairs,
+        kp.privateKey,
+        kp.publicKey,
+        sig.replace(/^0x/, ""),
+        [fheConfig.contractAddress],
+        userAddr,
+        startTs,
+        daysValid
+      );
+
+      coreLog("userDecrypt result", out);
+      return { out, pairs };
+    }
+
+    async function fheConfigure({ contractAddress, abi }) {
+      if (!contractAddress || !abi) {
+        throw new Error("configure(): contractAddress and abi are required");
+      }
+      fheConfig.contractAddress = contractAddress;
+      fheConfig.abi = abi;
+
+      const urls = detectRelayerUrls();
+      fheConfig.relayerUrl = urls.relayerUrl;
+      fheConfig.gatewayUrl = urls.gatewayUrl;
+
+      fheConfig.chainIdHex = DEFAULT_CHAIN_ID_HEX;
+      fheConfig.relayerNetworkConfig = SepoliaConfig;
+
+      coreLog("configure", {
+        contractAddress,
+        chainIdHex: fheConfig.chainIdHex,
+        relayerUrl: fheConfig.relayerUrl,
+        gatewayUrl: fheConfig.gatewayUrl
+      });
+    }
+
+    async function fheConnectWallet() {
+      if (!fheConfig.contractAddress || !fheConfig.abi) {
+        throw new Error("Call configure() before connectWallet()");
+      }
+      if (!window.ethereum?.request) {
+        throw new Error("No EIP-1193 provider (install MetaMask?)");
+      }
+
+      await ensureNetwork(fheConfig.chainIdHex);
+
+      const provider = new BrowserProvider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      const signer = await provider.getSigner();
+      const account = await signer.getAddress();
+      const contract = new Contract(fheConfig.contractAddress, fheConfig.abi, signer);
+
+      coreLog("creating relayer instance…");
+      const relayer = await createInstance({
+        ...fheConfig.relayerNetworkConfig,
+        relayerUrl: fheConfig.relayerUrl,
+        gatewayUrl: fheConfig.gatewayUrl,
+        network: window.ethereum,
+        debug: true
+      });
+
+      fheState.provider = provider;
+      fheState.signer = signer;
+      fheState.contract = contract;
+      fheState.relayer = relayer;
+      fheState.account = account;
+
+      try {
+        fheState.owner = await contract.owner();
+      } catch {
+        fheState.owner = null;
+      }
+
+      coreLog("wallet connected", {
+        account: shortAddress(account),
+        relayerUrl: fheConfig.relayerUrl
+      });
+
+      return { ...fheState };
+    }
+
+    async function fheDisconnectWallet() {
+      fheState.provider = null;
+      fheState.signer = null;
+      fheState.contract = null;
+      fheState.relayer = null;
+      fheState.account = null;
+      fheState.owner = null;
+      coreLog("wallet disconnected");
+    }
+
+    async function fheAutoConnectIfAuthorized() {
+      if (!window.ethereum?.request) return false;
+      try {
+        const accounts = await window.ethereum.request({ method: "eth_accounts" });
+        if (accounts && accounts.length) {
+          coreLog("autoConnectIfAuthorized → connecting…", accounts);
+          await fheConnectWallet();
+          window.ethereum.on?.("accountsChanged", () => window.location.reload());
+          window.ethereum.on?.("chainChanged", () => window.location.reload());
+          return true;
+        }
+      } catch (e) {
+        coreLog("autoConnectIfAuthorized error", e);
+      }
+      return false;
+    }
+
+    function fheGetState() {
+      return { ...fheState };
+    }
+
+    function fheRandomSeed(modulus = 10000) {
+      const buf = new Uint32Array(1);
+      crypto.getRandomValues(buf);
+      const raw = BigInt(buf[0]);
+      const mod = BigInt(modulus);
+      const res = mod === 0n ? raw : raw % mod;
+      return Number(res);
+    }
+
+    async function fheEncryptUint16(value) {
+      if (!fheState.relayer || !fheState.account || !fheConfig.contractAddress) {
+        throw new Error("Relayer/account/contractAddress not ready");
+      }
+      const n = Number(value);
+      if (!Number.isInteger(n) || n < 0 || n > 65535) {
+        throw new Error("encryptUint16: value must be in [0,65535]");
+      }
+
+      const buf = fheState.relayer.createEncryptedInput(
+        fheConfig.contractAddress,
+        fheState.account
+      );
+      buf.add16(n);
+      const { handles, inputProof } = await buf.encrypt();
+      coreLog("encryptUint16", { value: n, handle: handles[0] });
+      return { handle: handles[0], handles, proof: inputProof };
+    }
+
+    async function fheUserDecryptHandles(handles) {
+      if (!Array.isArray(handles) || !handles.length) {
+        throw new Error("userDecryptHandles: handles[] is required");
+      }
+      const pairs = handles.map((h) =>
+        typeof h === "string"
+          ? { handle: h, contractAddress: fheConfig.contractAddress }
+          : {
+              handle: h.handle,
+              contractAddress: h.contractAddress || fheConfig.contractAddress
+            }
+      );
+      const { out } = await userDecryptMany(pairs);
+      const pick = buildValuePicker(out, pairs);
+      return { pick, raw: out, pairs };
+    }
+
+    function fheIsOwner() {
+      if (!fheState.account || !fheState.owner) return false;
+      return fheState.account.toLowerCase() === fheState.owner.toLowerCase();
+    }
+
+    const fheCore = {
+      configure: fheConfigure,
+      connectWallet: fheConnectWallet,
+      disconnectWallet: fheDisconnectWallet,
+      autoConnectIfAuthorized: fheAutoConnectIfAuthorized,
+      getState: fheGetState,
+      randomSeed: fheRandomSeed,
+      encryptUint16: fheEncryptUint16,
+      userDecryptHandles: fheUserDecryptHandles,
+      isOwner: fheIsOwner,
+      _shortAddress: shortAddress,
+      _log: coreLog
+    };
+
+    if (typeof window !== "undefined") {
+      window.fheCore = fheCore;
+    }
+
+    // ------------------------------------------------------------------
+    // Contract ABI (HiddenTetrisScore)
+    // ------------------------------------------------------------------
+    const CONTRACT_ADDRESS = "0xC11B92dE32C2b3D6bEc7b1ef9f96A814D3aE32Fb";
+
+    const CONTRACT_ABI = [
+      { "inputs": [], "stateMutability": "nonpayable", "type": "constructor" },
+      {
+        "anonymous": false,
+        "inputs": [
+          { "indexed": true, "internalType": "uint256", "name": "boardId", "type": "uint256" },
+          { "indexed": false, "internalType": "bytes32", "name": "minScoreTop10Handle", "type": "bytes32" },
+          { "indexed": false, "internalType": "bytes32", "name": "minScoreTop3Handle", "type": "bytes32" }
+        ],
+        "name": "BoardThresholdsSet",
+        "type": "event"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          { "indexed": true, "internalType": "uint256", "name": "boardId", "type": "uint256" },
+          { "indexed": true, "internalType": "address", "name": "player", "type": "address" },
+          { "indexed": false, "internalType": "bytes32", "name": "scoreHandle", "type": "bytes32" },
+          { "indexed": false, "internalType": "bytes32", "name": "isTop10Handle", "type": "bytes32" },
+          { "indexed": false, "internalType": "bytes32", "name": "isTop3Handle", "type": "bytes32" },
+          { "indexed": false, "internalType": "bool", "name": "isFirstScore", "type": "bool" }
+        ],
+        "name": "ScoreSubmitted",
+        "type": "event"
+      },
+      {
+        "inputs": [
+          { "internalType": "uint256", "name": "boardId", "type": "uint256" },
+          { "internalType": "bytes32", "name": "encMinScoreTop10", "type": "bytes32" },
+          { "internalType": "bytes32", "name": "encMinScoreTop3", "type": "bytes32" },
+          { "internalType": "bytes", "name": "proof", "type": "bytes" }
+        ],
+        "name": "setBoardThresholds",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          { "internalType": "uint256", "name": "boardId", "type": "uint256" }
+        ],
+        "name": "getBoardMeta",
+        "outputs": [
+          { "internalType": "bool", "name": "exists", "type": "bool" }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          { "internalType": "uint256", "name": "boardId", "type": "uint256" }
+        ],
+        "name": "getBoardThresholdHandles",
+        "outputs": [
+          { "internalType": "bytes32", "name": "minTop10Handle", "type": "bytes32" },
+          { "internalType": "bytes32", "name": "minTop3Handle", "type": "bytes32" }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          { "internalType": "uint256", "name": "boardId", "type": "uint256" },
+          { "internalType": "bytes32", "name": "encScore", "type": "bytes32" },
+          { "internalType": "bytes", "name": "proof", "type": "bytes" }
+        ],
+        "name": "submitEncryptedScore",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          { "internalType": "uint256", "name": "boardId", "type": "uint256" }
+        ],
+        "name": "getMyScoreHandle",
+        "outputs": [
+          { "internalType": "bytes32", "name": "scoreHandle", "type": "bytes32" },
+          { "internalType": "bool", "name": "hasScore", "type": "bool" }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          { "internalType": "uint256", "name": "boardId", "type": "uint256" }
+        ],
+        "name": "getMyTierHandles",
+        "outputs": [
+          { "internalType": "bytes32", "name": "scoreHandle", "type": "bytes32" },
+          { "internalType": "bytes32", "name": "top10Handle", "type": "bytes32" },
+          { "internalType": "bytes32", "name": "top3Handle", "type": "bytes32" },
+          { "internalType": "bool", "name": "hasScore", "type": "bool" }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          { "internalType": "uint256", "name": "boardId", "type": "uint256" },
+          { "internalType": "address", "name": "user", "type": "address" }
+        ],
+        "name": "getUserTierHandles",
+        "outputs": [
+          { "internalType": "bytes32", "name": "scoreHandle", "type": "bytes32" },
+          { "internalType": "bytes32", "name": "top10Handle", "type": "bytes32" },
+          { "internalType": "bytes32", "name": "top3Handle", "type": "bytes32" },
+          { "internalType": "bool", "name": "hasScore", "type": "bool" }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [],
+        "name": "owner",
+        "outputs": [
+          { "internalType": "address", "name": "", "type": "address" }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          { "internalType": "address", "name": "newOwner", "type": "address" }
+        ],
+        "name": "transferOwnership",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      }
     ];
 
-    let provider=null, signer=null, contract=null, relayer=null;
-    let currentAccount=null, ownerAddr=null;
+    // ------------------------------------------------------------------
+    // UI state & DOM refs
+    // ------------------------------------------------------------------
+    const connectBtn = document.getElementById("connect-btn");
+    const connectLabel = document.getElementById("connect-label");
+    const accountPill = document.getElementById("account-pill");
+    const accountLabel = document.getElementById("account-label");
+    const ownerPill = document.getElementById("owner-pill");
+    const contractLabel = document.getElementById("contract-label");
 
-    const tag=(t,ok)=>`<span class="tag ${ok?'ok':'bad'}">${t}</span>`;
-    const setDecision=(txt,ok=null)=>{
-      if(ok===true) decisionBox.innerHTML=`Decision: ${tag('ELIGIBLE',true)} <span class="muted small">(${txt})</span>`;
-      else if(ok===false) decisionBox.innerHTML=`Decision: ${tag('NOT ELIGIBLE',false)} <span class="muted small">(${txt})</span>`;
-      else decisionBox.innerHTML='Decision: <span class="tag">n/a</span>';
-    };
-    const short=(a)=>a?a.slice(0,6)+'…'+a.slice(-4):'—';
+    const boardIdInput = document.getElementById("board-id-input");
+    const scoreSlider = document.getElementById("score-input");
+    const scoreLabel = document.getElementById("score-label");
+    const randomScoreBtn = document.getElementById("random-score-btn");
+    const submitScoreBtn = document.getElementById("submit-score-btn");
+    const submitStatusDot = document.getElementById("submit-status-dot");
+    const submitStatusText = document.getElementById("submit-status-text");
 
-    async function ensureSepolia(){
-      const id = await window.ethereum.request({ method:'eth_chainId' });
-      netPill.textContent = 'Network: ' + (id||'—');
-      if(id?.toLowerCase()!==CHAIN_ID_HEX){
-        try{ await window.ethereum.request({ method:'wallet_switchEthereumChain', params:[{ chainId: CHAIN_ID_HEX }] }); }catch(e){}
-      }
-      const now = await window.ethereum.request({ method:'eth_chainId' });
-      netPill.textContent = 'Network: ' + (now||'—');
+    const scoreBarShell = document.getElementById("score-bar-shell");
+    const scoreBarFill = document.getElementById("score-bar-fill");
+    const scoreValueText = document.getElementById("score-value-text");
+    const scoreMetaLabel = document.getElementById("score-meta-label");
+    const decryptBtn = document.getElementById("decrypt-btn");
+    const resultStatusDot = document.getElementById("result-status-dot");
+    const resultStatusText = document.getElementById("result-status-text");
+    const tierBadges = document.getElementById("tier-badges");
+    const tierTextMain = document.getElementById("tier-text-main");
+    const tierTextExtra = document.getElementById("tier-text-extra");
+
+    const ownerCard = document.getElementById("owner-card");
+    const ownerBoardIdInput = document.getElementById("owner-board-id-input");
+    const top10Input = document.getElementById("top10-input");
+    const top3Input = document.getElementById("top3-input");
+    const setThresholdsBtn = document.getElementById("set-thresholds-btn");
+    const boardStatusDot = document.getElementById("board-status-dot");
+    const boardStatusText = document.getElementById("board-status-text");
+
+    const resultStatusDefault = "Nothing decrypted yet";
+
+    let isBusyConnect = false;
+    let isBusySubmit = false;
+    let isBusyDecrypt = false;
+    let isBusyThresholds = false;
+
+    let lastDecryptedScore = null;
+    let lastDecryptedTop10 = null;
+    let lastDecryptedTop3 = null;
+
+    // ------------------------------------------------------------------
+    // Helpers: UI sync
+    // ------------------------------------------------------------------
+    function syncButtonsDisabled() {
+      const { account } = fheCore.getState();
+      const hasAccount = !!account;
+
+      connectBtn.disabled = isBusyConnect;
+
+      submitScoreBtn.disabled =
+        !hasAccount || isBusyConnect || isBusySubmit;
+
+      decryptBtn.disabled =
+        !hasAccount || isBusyConnect || isBusyDecrypt;
+
+      setThresholdsBtn.disabled =
+        !hasAccount || !fheCore.isOwner() || isBusyThresholds;
     }
 
-    async function connect(){
-      if(!window.ethereum?.request){ alert('Install MetaMask'); return; }
-      await window.ethereum.request({ method:'eth_requestAccounts' });
-      await ensureSepolia();
+    function updateConnectionUi() {
+      const state = fheCore.getState();
 
-      provider = new BrowserProvider(window.ethereum);
-      signer = await provider.getSigner();
-      currentAccount = await signer.getAddress();
-      accEl.textContent = short(currentAccount);
-
-      contract = new Contract(CONTRACT_ADDRESS, ABI, signer);
-      caddrEl.textContent = CONTRACT_ADDRESS;
-
-      try{ ownerAddr = await contract.owner(); cownerEl.textContent = short(ownerAddr); }
-      catch{ ownerAddr = null; cownerEl.textContent = '—'; }
-      isOwnerPill.textContent = 'owner: ' + (ownerAddr && currentAccount && ownerAddr.toLowerCase()===currentAccount.toLowerCase() ? 'yes' : 'no');
-
-      relayer = await createInstance({ ...SepoliaConfig, relayerUrl: RELAYER_URL, gatewayUrl: GATEWAY_URL, network: window.ethereum, debug: true });
-      relayerStateEl.textContent = 'ready' + (IS_HTTPS ? '' : ' (limited)') + (HAS_LOCAL_PROXY ? ' (proxy)' : '');
-      btnConnect.textContent = 'Disconnect';
-    }
-
-    function disconnect(){
-      provider=signer=contract=relayer=null; currentAccount=null;
-      accEl.textContent='—'; btnConnect.textContent='Connect'; relayerStateEl.textContent='not ready';
-      setDecision(''); lastHandleEl.textContent='—'; handleOut.value='';
-    }
-
-    btnConnect.addEventListener('click', async()=>{ if(signer) disconnect(); else await connect(); });
-    btnCopy.addEventListener('click', async()=>{ if(!handleOut.value) return; await navigator.clipboard.writeText(handleOut.value); btnCopy.textContent='Copied'; setTimeout(()=>btnCopy.textContent='Copy',900); });
-
-    // ===== Helpers for decrypt =====
-    function normalizePublicDecryptResult(out, handleHex){
-      if(Array.isArray(out)){
-        const first = out[0];
-        return typeof first === 'string' ? first : (first?.value ?? null);
-      }
-      if(out && typeof out==='object'){
-        const k = handleHex?.toLowerCase?.();
-        const v = out[handleHex] ?? out[k];
-        return (typeof v==='object' && v!==null && 'value' in v) ? v.value : v;
-      }
-      return null;
-    }
-
-    async function smartDecrypt(handleHex, mode='auto'){
-      if(!relayer || !contract) throw new Error('Connect wallet first');
-      const pair = { handle: String(handleHex), contractAddress: CONTRACT_ADDRESS };
-
-      // 1) public (pairs)
-      if(mode==='auto' || mode==='public'){
-        try{
-          const out = await relayer.publicDecrypt([pair]);
-          const v = normalizePublicDecryptResult(out, String(handleHex));
-          if(v!=null) return BigInt(v)===1n;
-        }catch(e){ if(mode==='public') throw e; }
-
-        // 2) public (handles only)
-        try{
-          const out2 = await relayer.publicDecrypt([String(handleHex)]);
-          const v2 = normalizePublicDecryptResult(out2, String(handleHex));
-          if(v2!=null) return BigInt(v2)===1n;
-        }catch(e){ if(mode==='public') throw e; }
+      if (contractLabel) {
+        contractLabel.textContent =
+          CONTRACT_ADDRESS.slice(0, 8) + "…" + CONTRACT_ADDRESS.slice(-4);
       }
 
-      // 3) signed userDecrypt
-      if(mode!=='public'){
-        if(!IS_HTTPS) throw new Error('Open over HTTPS to use signed decrypt');
-        const kp = await generateKeypair();
-        const startTs = Math.floor(Date.now()/1000).toString();
-        const daysValid = '7';
-        const eip = relayer.createEIP712(kp.publicKey, [CONTRACT_ADDRESS], startTs, daysValid);
-        const sig = await signer.signTypedData(eip.domain, { UserDecryptRequestVerification: eip.types.UserDecryptRequestVerification }, eip.message);
-        const out = await relayer.userDecrypt(
-          [pair],
-          kp.privateKey, kp.publicKey, sig.replace('0x',''),
-          [CONTRACT_ADDRESS], await signer.getAddress(), startTs, daysValid
+      if (!state.account) {
+        connectLabel.textContent = "Connect wallet";
+        accountPill.style.display = "none";
+        ownerPill.style.display = "none";
+        submitStatusDot.classList.remove("live");
+        submitStatusText.textContent = "Wallet not connected";
+        resultStatusDot.classList.remove("live");
+        resultStatusText.textContent = resultStatusDefault;
+        ownerCard.style.display = "none";
+      } else {
+        connectLabel.textContent = "Disconnect";
+        accountPill.style.display = "inline-flex";
+        accountLabel.textContent = fheCore._shortAddress(state.account);
+        submitStatusDot.classList.add("live");
+        submitStatusText.textContent = "Connected as " + fheCore._shortAddress(state.account);
+        resultStatusDot.classList.add("live");
+        resultStatusText.textContent = resultStatusDefault;
+
+        const owner = fheCore.isOwner();
+        ownerPill.style.display = owner ? "inline-flex" : "none";
+        ownerCard.style.display = owner ? "block" : "none";
+      }
+
+      syncButtonsDisabled();
+    }
+
+    function updateScoreSliderLabel() {
+      scoreLabel.textContent = scoreSlider.value;
+    }
+
+    function updateScoreBar(percent, scoreValue, hasScore) {
+      const p = Math.max(0, Math.min(100, percent));
+      const scale = p / 100;
+      scoreBarFill.style.transform = "scaleX(" + scale + ")";
+      scoreBarShell.dataset.low = p <= 25 ? "1" : "0";
+
+      if (!hasScore) {
+        scoreValueText.textContent = "Score: —";
+        scoreMetaLabel.textContent = "no submission yet";
+      } else {
+        scoreValueText.textContent = "Score: " + scoreValue.toString();
+        scoreMetaLabel.textContent = "best encrypted score for this board";
+      }
+    }
+
+    function updateTierUi() {
+      const hasScore = lastDecryptedScore !== null;
+      tierBadges.innerHTML = "";
+
+      if (!hasScore) {
+        const badge = document.createElement("div");
+        badge.className = "badge";
+        badge.dataset.tier = "participant";
+        const dot = document.createElement("div");
+        dot.className = "badge-dot";
+        const span = document.createElement("span");
+        span.textContent = "No score yet";
+        badge.appendChild(dot);
+        badge.appendChild(span);
+        tierBadges.appendChild(badge);
+
+        tierTextMain.textContent = "No score yet";
+        tierTextExtra.textContent =
+          "Submit a score and decrypt it to see your personal tier.";
+        return;
+      }
+
+      const isTop10 = lastDecryptedTop10 !== null && lastDecryptedTop10 !== 0n;
+      const isTop3 = lastDecryptedTop3 !== null && lastDecryptedTop3 !== 0n;
+
+      if (isTop3) {
+        const badge3 = document.createElement("div");
+        badge3.className = "badge";
+        badge3.dataset.tier = "top3";
+        const dot3 = document.createElement("div");
+        dot3.className = "badge-dot";
+        const span3 = document.createElement("span");
+        span3.textContent = "Top 3 tier";
+        badge3.appendChild(dot3);
+        badge3.appendChild(span3);
+        tierBadges.appendChild(badge3);
+      }
+
+      if (isTop10 && !isTop3) {
+        const badge10 = document.createElement("div");
+        badge10.className = "badge";
+        badge10.dataset.tier = "top10";
+        const dot10 = document.createElement("div");
+        dot10.className = "badge-dot";
+        const span10 = document.createElement("span");
+        span10.textContent = "Top 10% tier";
+        badge10.appendChild(dot10);
+        badge10.appendChild(span10);
+        tierBadges.appendChild(badge10);
+      }
+
+      if (!isTop10 && !isTop3) {
+        const badgeP = document.createElement("div");
+        badgeP.className = "badge";
+        badgeP.dataset.tier = "participant";
+        const dotP = document.createElement("div");
+        dotP.className = "badge-dot";
+        const spanP = document.createElement("span");
+        spanP.textContent = "Participant";
+        badgeP.appendChild(dotP);
+        badgeP.appendChild(spanP);
+        tierBadges.appendChild(badgeP);
+      }
+
+      if (isTop3) {
+        tierTextMain.textContent = "You are in the top 3 tier for this board.";
+      } else if (isTop10) {
+        tierTextMain.textContent = "You are in the top 10% tier for this board.";
+      } else {
+        tierTextMain.textContent = "You have a stored encrypted score.";
+      }
+
+      tierTextExtra.textContent =
+        "Only you can decrypt your exact score. The contract only computes tiers under FHE.";
+    }
+
+    async function refreshBoardMeta(boardId) {
+      const { contract } = fheCore.getState();
+      if (!contract) {
+        boardStatusDot.classList.remove("live");
+        boardStatusText.textContent = "Connect as owner to manage thresholds";
+        return;
+      }
+
+      try {
+        const exists = await contract.getBoardMeta(boardId);
+        if (exists) {
+          boardStatusDot.classList.add("live");
+          boardStatusText.textContent = "Board " + boardId + " is configured (encrypted thresholds)";
+        } else {
+          boardStatusDot.classList.remove("live");
+          boardStatusText.textContent = "Board " + boardId + " not configured yet";
+        }
+      } catch (e) {
+        appendUiLog("Failed to read board meta: " + (e?.message || e), { kind: "error" });
+      }
+    }
+
+    async function refreshMyScorePreview(boardId) {
+      const { contract, account } = fheCore.getState();
+      if (!contract || !account) {
+        updateScoreBar(0, 0n, false);
+        lastDecryptedScore = null;
+        lastDecryptedTop10 = null;
+        lastDecryptedTop3 = null;
+        updateTierUi();
+        return;
+      }
+
+      try {
+        const [scoreHandle, hasScore] = await contract.getMyScoreHandle(boardId);
+        if (!hasScore) {
+          updateScoreBar(0, 0n, false);
+          lastDecryptedScore = null;
+          lastDecryptedTop10 = null;
+          lastDecryptedTop3 = null;
+          updateTierUi();
+          appendUiLog("No encrypted score yet for this board.", { kind: "info" });
+          return;
+        }
+
+        // We don't decrypt here yet, only show that something exists
+        updateScoreBar(10, 0n, true);
+        lastDecryptedScore = null;
+        lastDecryptedTop10 = null;
+        lastDecryptedTop3 = null;
+        updateTierUi();
+        appendUiLog("Encrypted score exists for this board. Use decrypt to reveal it locally.", { kind: "ok" });
+      } catch (e) {
+        appendUiLog("Failed to refresh encrypted score: " + (e?.message || e), { kind: "error" });
+      }
+    }
+
+    // ------------------------------------------------------------------
+    // Handlers
+    // ------------------------------------------------------------------
+    async function handleConnectClick() {
+      const { account } = fheCore.getState();
+      try {
+        isBusyConnect = true;
+        syncButtonsDisabled();
+
+        if (!account) {
+          appendUiLog("Connecting wallet & initializing Relayer…");
+          await fheCore.configure({ contractAddress: CONTRACT_ADDRESS, abi: CONTRACT_ABI });
+          await fheCore.connectWallet();
+          appendUiLog("Wallet connected.", { kind: "ok" });
+
+          if (window.ethereum?.on) {
+            window.ethereum.on("accountsChanged", () => window.location.reload());
+            window.ethereum.on("chainChanged", () => window.location.reload());
+          }
+        } else {
+          appendUiLog("Disconnecting wallet…");
+          await fheCore.disconnectWallet();
+          appendUiLog("Disconnected.", { kind: "ok" });
+        }
+      } catch (e) {
+        appendUiLog("Wallet error: " + (e?.message || e), { kind: "error" });
+      } finally {
+        isBusyConnect = false;
+        updateConnectionUi();
+        const boardId = Number(boardIdInput.value || 1);
+        await refreshBoardMeta(boardId);
+        await refreshMyScorePreview(boardId);
+      }
+    }
+
+    async function handleRandomScore() {
+      const value = fheCore.randomSeed(10000);
+      scoreSlider.value = String(value);
+      updateScoreSliderLabel();
+    }
+
+    async function handleSubmitScore() {
+      const { account, contract } = fheCore.getState();
+      if (!account || !contract) {
+        appendUiLog("Connect wallet first.", { kind: "error" });
+        return;
+      }
+
+      const boardId = Number(boardIdInput.value || 1);
+      if (!Number.isInteger(boardId) || boardId <= 0) {
+        appendUiLog("Board id must be a positive integer.", { kind: "error" });
+        return;
+      }
+
+      const scoreValue = Number(scoreSlider.value || 0);
+      if (!Number.isInteger(scoreValue) || scoreValue < 0 || scoreValue > 65535) {
+        appendUiLog("Score must be between 0 and 65535.", { kind: "error" });
+        return;
+      }
+
+      try {
+        isBusySubmit = true;
+        syncButtonsDisabled();
+        appendUiLog(`Encrypting score=${scoreValue} for board=${boardId}…`);
+
+        const enc = await fheCore.encryptUint16(scoreValue);
+
+        appendUiLog("Sending encrypted score to contract…");
+        const tx = await contract.submitEncryptedScore(boardId, enc.handle, enc.proof);
+        appendUiLog("submitEncryptedScore tx sent: " + tx.hash, { kind: "info" });
+
+        await tx.wait();
+        appendUiLog("Score transaction confirmed. Encrypted state updated on-chain.", { kind: "ok" });
+
+        lastDecryptedScore = null;
+        lastDecryptedTop10 = null;
+        lastDecryptedTop3 = null;
+
+        await refreshMyScorePreview(boardId);
+      } catch (e) {
+        appendUiLog("Submit failed: " + (e?.message || e), { kind: "error" });
+      } finally {
+        isBusySubmit = false;
+        syncButtonsDisabled();
+      }
+    }
+
+    async function handleDecryptMyScore() {
+      const { account, contract } = fheCore.getState();
+      if (!account || !contract) {
+        appendUiLog("Connect wallet first.", { kind: "error" });
+        return;
+      }
+
+      const boardId = Number(boardIdInput.value || 1);
+      if (!Number.isInteger(boardId) || boardId <= 0) {
+        appendUiLog("Board id must be a positive integer.", { kind: "error" });
+        return;
+      }
+
+      try {
+        isBusyDecrypt = true;
+        syncButtonsDisabled();
+        appendUiLog("Reading encrypted handles from contract…");
+
+        const [scoreHandle, top10Handle, top3Handle, hasScore] =
+          await contract.getMyTierHandles(boardId);
+
+        if (!hasScore) {
+          appendUiLog("No score stored for this board.", { kind: "error" });
+          updateScoreBar(0, 0n, false);
+          lastDecryptedScore = null;
+          lastDecryptedTop10 = null;
+          lastDecryptedTop3 = null;
+          updateTierUi();
+          return;
+        }
+
+        appendUiLog("Calling userDecrypt via Relayer (score + tier flags)…");
+        const handles = [scoreHandle, top10Handle, top3Handle];
+        const { pick } = await fheCore.userDecryptHandles(handles);
+
+        const score = pick(scoreHandle);
+        const top10 = pick(top10Handle);
+        const top3 = pick(top3Handle);
+
+        lastDecryptedScore = score;
+        lastDecryptedTop10 = top10;
+        lastDecryptedTop3 = top3;
+
+        const scoreNum = score ?? 0n;
+        const maxForBar = 10000n;
+        const clamped = scoreNum > maxForBar ? maxForBar : scoreNum;
+        const percent = Number((clamped * 100n) / maxForBar);
+
+        updateScoreBar(percent, scoreNum, true);
+        updateTierUi();
+
+        resultStatusDot.classList.add("live");
+        resultStatusText.textContent = "Decrypted locally via userDecrypt";
+
+        const t10 = top10 !== null && top10 !== 0n;
+        const t3 = top3 !== null && top3 !== 0n;
+        const tierStr = t3 ? "top 3 tier" : t10 ? "top 10% tier" : "participant tier";
+
+        appendUiLog(
+          `Decrypted score=${scoreNum.toString()} (${tierStr}).`,
+          { kind: "ok" }
         );
-        const picked = out[String(handleHex)] ?? out[String(handleHex).toLowerCase()];
-        if(picked==null) throw new Error('userDecrypt returned empty');
-        return BigInt(picked)===1n;
+      } catch (e) {
+        appendUiLog("Decrypt failed: " + (e?.message || e), { kind: "error" });
+      } finally {
+        isBusyDecrypt = false;
+        syncButtonsDisabled();
       }
-
-      throw new Error('Decrypt failed');
     }
 
-    // === Encrypt & Evaluate (NO auto-decrypt earlier; now we auto-try) ===
-    btnEval.addEventListener('click', async()=>{
-      try{
-        if(!signer || !contract || !relayer) throw new Error('Connect wallet first');
-        const planId = BigInt(planIdEl.value||'0');
-        const kyc = Number(kycEl.value||'0')|0;
-        const tenure = Number(tenureEl.value||'0')|0;
-        const volume = Number(volumeEl.value||'0')|0;
-        if(planId<=0n) throw new Error('Bad planId');
+    async function handleSetThresholds() {
+      if (!fheCore.isOwner()) {
+        appendUiLog("Only the contract owner can set thresholds.", { kind: "error" });
+        return;
+      }
 
-        setDecision('encrypting …');
-        const enc = relayer.createEncryptedInput(CONTRACT_ADDRESS, currentAccount);
-        enc.add8(kyc); enc.add16(tenure); enc.add32(volume);
-        const { handles, inputProof } = await enc.encrypt();
+      const { contract, relayer, account } = fheCore.getState();
+      if (!contract || !relayer || !account) {
+        appendUiLog("Relayer or contract not ready.", { kind: "error" });
+        return;
+      }
 
-        const tx = await contract.evaluateEligibilityEncrypted(planId, handles[0], handles[1], handles[2], inputProof);
-        await tx.wait();
+      const boardId = Number(ownerBoardIdInput.value || 1);
+      if (!Number.isInteger(boardId) || boardId <= 0) {
+        appendUiLog("Board id must be a positive integer.", { kind: "error" });
+        return;
+      }
 
-        const h = await contract.getMyEligibilityHandle(planId);
-        handleOut.value = h; lastHandleEl.textContent = h;
+      const top10Val = Number(top10Input.value || 0);
+      const top3Val = Number(top3Input.value || 0);
 
-        // AUTO decrypt cascade right after evaluation
-        try{
-          const ok = await smartDecrypt(h, 'auto');
-          setDecision('auto decrypt', ok);
-        }catch(e){ setDecision('stored handle — use buttons to decrypt'); }
-      }catch(e){ console.error(e); alert(e?.message||'Failed'); setDecision('error'); }
-    });
+      for (const [label, v] of [
+        ["Top 10 threshold", top10Val],
+        ["Top 3 threshold", top3Val]
+      ]) {
+        if (!Number.isInteger(v) || v < 0 || v > 65535) {
+          appendUiLog(label + " must be in [0, 65535].", { kind: "error" });
+          return;
+        }
+      }
 
-    // Make public (on-chain)
-    btnMakePublic.addEventListener('click', async()=>{
-      try{
-        if(!signer || !contract) throw new Error('Connect wallet first');
-        const planId = BigInt(planIdEl.value||'0');
-        const tx = await contract.makeMyEligibilityPublic(planId);
-        await tx.wait();
-        const h = await contract.getMyEligibilityHandle(planId);
-        handleOut.value = h; lastHandleEl.textContent = h;
-        setDecision('made public — now try Decrypt (public)');
-      }catch(e){ console.error(e); alert(e?.message||'Failed'); }
-    });
+      try {
+        isBusyThresholds = true;
+        syncButtonsDisabled();
 
-    // === Replaced handlers: use smartDecrypt ===
-    btnPublicDecrypt.addEventListener('click', async()=>{
-      try{
-        const planId = BigInt(planIdEl.value||'0');
-        const h = handleOut.value || await contract.getMyEligibilityHandle(planId);
-        if(!h || String(h)==='0x'+'0'.repeat(64)) throw new Error('No decision handle. Evaluate first.');
-        const ok = await smartDecrypt(String(h), 'public');
-        setDecision('public decrypt', ok);
-      }catch(e){ console.error('public decrypt failed:', e); alert(e?.message||'Public decrypt failed'); setDecision('error'); }
-    });
+        appendUiLog(
+          `Encrypting thresholds for board=${boardId}: top10=${top10Val}, top3=${top3Val}…`
+        );
 
-    btnUserDecrypt.addEventListener('click', async()=>{
-      try{
-        const planId = BigInt(planIdEl.value||'0');
-        const h = handleOut.value || await contract.getMyEligibilityHandle(planId);
-        if(!h || String(h)==='0x'+'0'.repeat(64)) throw new Error('No decision handle');
-        const ok = await smartDecrypt(String(h), 'signed');
-        setDecision('signed decrypt', ok);
-      }catch(e){ console.error(e); alert(e?.message||'Failed'); }
-    });
-
-    // === Admin: set encrypted policy ===
-    btnSetPolicy.addEventListener('click', async()=>{
-      try{
-        if(!signer || !contract || !relayer) throw new Error('Connect wallet first');
-        if(!ownerAddr || ownerAddr.toLowerCase()!== (await signer.getAddress()).toLowerCase()) throw new Error('Owner only');
-        const planId = BigInt(pPlanEl.value||'0');
-        const a=Number(pKycEl.value||'0')|0, b=Number(pTenureEl.value||'0')|0, c=Number(pVolEl.value||'0')|0, d=Number(pPassEl.value||'0')|0;
-        if(planId<=0n) throw new Error('Bad planId');
-
-        const buf = relayer.createEncryptedInput(CONTRACT_ADDRESS, await signer.getAddress());
-        buf.add8(a); buf.add16(b); buf.add32(c); buf.add8(d);
+        const buf = relayer.createEncryptedInput(CONTRACT_ADDRESS, account);
+        buf.add16(top10Val);
+        buf.add16(top3Val);
         const { handles, inputProof } = await buf.encrypt();
 
-        const tx = await contract.setPolicyEncrypted(planId, handles[0], handles[1], handles[2], handles[3], inputProof);
-        await tx.wait(); alert('Policy set ✓');
-      }catch(e){ console.error(e); alert(e?.message||'Failed'); }
-    });
+        const encTop10 = handles[0];
+        const encTop3 = handles[1];
 
-    if(window.ethereum){
-      window.ethereum.on?.('accountsChanged', ()=>location.reload());
-      window.ethereum.on?.('chainChanged', ()=>location.reload());
-      try{ const a = await window.ethereum.request({ method:'eth_accounts' }); if(a && a.length) await connect(); }catch{}
+        appendUiLog("Sending encrypted thresholds to contract…");
+        const tx = await contract.setBoardThresholds(boardId, encTop10, encTop3, inputProof);
+        appendUiLog("setBoardThresholds tx sent: " + tx.hash, { kind: "info" });
+
+        await tx.wait();
+        appendUiLog("Board thresholds updated (encrypted).", { kind: "ok" });
+
+        await refreshBoardMeta(boardId);
+      } catch (e) {
+        appendUiLog("Threshold update failed: " + (e?.message || e), { kind: "error" });
+      } finally {
+        isBusyThresholds = false;
+        syncButtonsDisabled();
+      }
     }
+
+    function handleBoardIdChangeSyncOwner() {
+      const v = boardIdInput.value;
+      ownerBoardIdInput.value = v;
+    }
+
+    // ------------------------------------------------------------------
+    // Init app
+    // ------------------------------------------------------------------
+    async function initApp() {
+      appendUiLog("Initializing fhEVM core for Hidden Tetris Score…");
+      await fheCore.configure({ contractAddress: CONTRACT_ADDRESS, abi: CONTRACT_ABI });
+
+      updateScoreSliderLabel();
+
+      scoreSlider.addEventListener("input", updateScoreSliderLabel);
+      randomScoreBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        handleRandomScore().catch((err) =>
+          appendUiLog("random score error: " + (err?.message || err), { kind: "error" })
+        );
+      });
+
+      connectBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        handleConnectClick().catch((err) =>
+          appendUiLog("connect handler error: " + (err?.message || err), { kind: "error" })
+        );
+      });
+
+      submitScoreBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        handleSubmitScore().catch((err) =>
+          appendUiLog("submit handler error: " + (err?.message || err), { kind: "error" })
+        );
+      });
+
+      decryptBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        handleDecryptMyScore().catch((err) =>
+          appendUiLog("decrypt handler error: " + (err?.message || err), { kind: "error" })
+        );
+      });
+
+      setThresholdsBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        handleSetThresholds().catch((err) =>
+          appendUiLog("threshold handler error: " + (err?.message || err), { kind: "error" })
+        );
+      });
+
+      boardIdInput.addEventListener("change", () => {
+        handleBoardIdChangeSyncOwner();
+        const boardId = Number(boardIdInput.value || 1);
+        refreshBoardMeta(boardId).catch(() => {});
+        refreshMyScorePreview(boardId).catch(() => {});
+      });
+
+      handleBoardIdChangeSyncOwner();
+
+      try {
+        const auto = await fheCore.autoConnectIfAuthorized();
+        if (auto) {
+          appendUiLog("Wallet already authorized; auto-connected.", { kind: "ok" });
+        }
+      } catch (e) {
+        appendUiLog("autoConnect error: " + (e?.message || e), { kind: "error" });
+      }
+
+      updateConnectionUi();
+      const boardId = Number(boardIdInput.value || 1);
+      await refreshBoardMeta(boardId);
+      await refreshMyScorePreview(boardId);
+    }
+
+    initApp().catch((e) => {
+      appendUiLog("Fatal init error: " + (e?.message || e), { kind: "error" });
+      coreLog("init error", e);
+    });
   </script>
 </body>
 </html>
